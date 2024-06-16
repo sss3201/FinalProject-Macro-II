@@ -6,7 +6,7 @@
  * 
  */
 
-title_string='Economy with divisible labor' 
+title_string='Economy with divisible labor'
 
 var c $c$ (long_name='consumption')
     w $w$ (long_name='real wage')
@@ -37,16 +37,17 @@ theta = 0.36;
 gamma = 0.95;
 A = 2;
 sigma_eps=0.00712;
+h_0=0.53;
 
 model;
 //1. Euler Equation
 1/c = beta*((1/c(+1))*(r(+1) +(1-delta)));
 //2. Labor FOC
-(1-theta)*(y/h) = A/(1-h)*c;
+(1-theta)*(y/h) = B*c;
 //3. Resource constraint
-k = y +(1-delta)*k(-1) - c;
-//4. Inversion
-invest=y-c;
+c = y +(1-delta)*k(-1) - k;
+//4. LOM capital
+k= (1-delta)*k(-1) + invest;
 //5. Production function
 y = lambda*k(-1)^(theta)*h^(1-theta);
 //6. Real wage
@@ -60,8 +61,10 @@ productivity= y/h;
 end;
 
 steady_state_model;
+//Follows footnote 15
+B=-A*(log(1-h_0))/h_0; %called psi in footnote
 lambda = 1;
-h = (1+(A/(1-theta))*(1 - (beta*delta*theta)/(1-beta*(1-delta))))^(-1);
+h = (1-theta)*(1/beta -(1-delta))/(B*(1/beta -(1-delta)-theta*delta));
 k = h*((1/beta -(1-delta))/(theta*lambda))^(1/(theta-1));
 invest = delta*k;
 y = lambda*k^(theta)*h^(1-theta);

@@ -6,7 +6,7 @@
  * 
  */
 
-title_string='Economy with divisible labor'
+title_string='Economy with indivisible labor'
 
 var c $c$ (long_name='consumption')
     w $w$ (long_name='real wage')
@@ -84,7 +84,7 @@ check;
 steady;
 stoch_simul(order=1,irf=20,loglinear,hp_filter=1600) y c invest k h productivity w;
 
-stoch_simul(order=1,irf=20,loglinear,hp_filter=1600,simul_replic=100,periods=179) y c invest h productivity w;
+stoch_simul(order=1,irf=20,loglinear,hp_filter=1600,simul_replic=10000,periods=200) y c invest h productivity w;
 
 %read out simulations
 simulated_series_raw=get_simul_replications(M_,options_);

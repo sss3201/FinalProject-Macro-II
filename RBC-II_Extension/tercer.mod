@@ -1,138 +1,245 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%  LAMBDA GROUP %%%%%%%%%%%%%%%%%%%%%%%%% 
-%%%%%%%%%%%%%%%%%%%%%%% TOPICOS DSGE - RBC %%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+/*
+ * Este codigo es una adaptación e inspiración del codigo realizado por: 
+ * Dr. Johannes Pfeifer  
+ * donde replica el paper de Hansen, Gary D. (1985): "Invisible labor and the business cycle", Journal 
+ * of Monetary Economics 16, pp.309-327.
+ * 
+ */
 
-// Codigo que describe un modelo RBC basico loglinealizado (expansion de
-// Taylor de 1er orden). Las CPO se presentan de forma no lineal.
-// El Estado Estacionario es obtenido manualmente.
-// La funcion de utilidad corresponde a la forma KPR. 
-// (c) Carlos Rojas Quiroz 
+title_string='Economy with non separable leisure'
 
-var lab c w r y kap innv z g;
-predetermined_variables kap;
-varexo e_z e_g;
-parameters alpha delta betta sigma theta rho_z rho_g 
-z_ss lab_ss r_ss  kap_ss w_ss y_ss c_ss inv_ss g_ss C_Y I_Y G_Y;
+var c $c$ (long_name='consumption')
+    w $w$ (long_name='real wage')
+    r $r$ (long_name='real interest rate')
+    y $y$ (long_name='output')
+    h $h$ (long_name='hours')
+    k $k$ (long_name='capital stock')
+    invest $i$ (long_name='investment')
+    lambda $\lambda$ (long_name='TFP')
+    productivity ${\frac{y}{h}}$ (long_name='Productivity')
+    L $L$ (long_name='leisure')
+    x $x$ (long_name='labor market status');
+    
+varexo eps_a;
 
-alpha  = 1-0.33;
-delta  = 0.023;
-betta  = 0.99;
-sigma  = 1.0;
-rho_z  = 0.95;
-rho_g  = 0.75;
-z_ss   = 1; 
-G_Y    = 0.155;
-lab_ss = 0.383409634485720;
-y_ss   = z_ss^(1/alpha)*((1-alpha)*betta/(1-betta+betta*delta))^((1-alpha)/alpha)*lab_ss;
-c_ss   = ((1-betta+alpha*betta*delta)/(1-betta+betta*delta)-G_Y)*y_ss;
-theta  = 1/((1/lab_ss-1)*alpha*y_ss/c_ss+1);
-w_ss   = alpha*y_ss/lab_ss;
-kap_ss = (1-alpha)*betta/(1-betta+betta*delta)*y_ss;
-inv_ss = delta*kap_ss;
-r_ss   = (1-alpha)*y_ss/kap_ss-delta;
-g_ss   = G_Y*y_ss;
-C_Y    = c_ss/y_ss;
-I_Y    = inv_ss/y_ss;
+parameters beta $\beta$ (long_name='discount factor')
+    delta $\delta$ (long_name='depreciation rate')
+    theta $\theta$ (long_name='capital share')
+    gamma $\gamma$ (long_name='AR coefficient TFP')
+    A $A$ (long_name='labor disutility parameter')
+    a_0 ${a_0}$ (long_name='initial labor market status')
+    sigma_eps $\sigma_e$ (long_name='TFP shock volatility')
+    eta $\eta$ (long_name='leisure disutility parameter')
+    ;
+
+//Calibration, p. 319
+beta = 0.99;
+delta = 0.025;
+theta = 0.36;
+gamma = 0.95;
+A = 2;
+sigma_eps=0.007;
+a_0=0.35;
+eta=0.10;
 
 model;
-exp(lab)        = 1-(1-theta)/theta*(exp(c)/exp(w));
-exp(c)^(theta-1)*(1-exp(lab))^(1-theta)*(exp(c)^theta*(1-exp(lab)^(1-theta))^(-sigma)) = 
-betta*(exp(c(+1))^(theta-1)*(1-exp(lab(+1)))^(1-theta)*(exp(c(+1))^theta*(1-exp(lab(+1))^(1-theta))^(-sigma)))*(1+exp(r(+1)));
-exp(w)          = alpha*exp(y)/exp(lab);
-exp(r)+delta    = (1-alpha)*exp(y)/exp(kap);
-exp(y)          = exp(c)+exp(innv)+exp(g);
-exp(kap(+1))    = (1-delta)*exp(kap)+exp(innv);
-exp(y)          = exp(z)*exp(kap)^(1-alpha)*exp(lab)^alpha;
-z               = (1-rho_z)*log(z_ss) + rho_z*z(-1) + e_z;
-g               = (1-rho_g)*log(g_ss) + rho_g*g(-1) + e_g;
+//1. Euler Equation
+1/c = beta*((1/c(+1))*(r(+1) +(1-delta)));
+//2. Labor FOC
+(1-theta)*(y/h) = A/L*c*(a_0-eta)/(1-eta);
+//3. Resource constraint
+c = y +(1-delta)*k(-1) - k;
+//4. LOM capital
+k= (1-delta)*k(-1) + invest;
+//5. Production function
+y = lambda*k(-1)^(theta)*h^(1-theta);
+//6. Real wage
+r = theta*(y/k(-1));
+//7. Real interest rate
+w = (1-theta)*(y/h);
+//8. LOM TFP
+log(lambda)=gamma*log(lambda(-1))+eps_a;
+//9. Productivity
+productivity= y/h;
+L=1-a_0*h-eta*(1-a_0)*(x(-1));
+x=(1-eta)*(x(-1))+h;
 end;
 
 steady_state_model;
-lab =log(lab_ss);
-c   =log(c_ss); 
-w   =log(w_ss); 
-r   =log(r_ss); 
-y   =log(y_ss); 
-kap =log(kap_ss); 
-innv=log(inv_ss); 
-z   =log(z_ss);
-g   =log(g_ss);
+//Follows footnote 15
+lambda = 1;
+h = (1+((A*(a_0-eta)/(1-eta))/(1-theta))*(1 - (beta*delta*theta)/(1-beta*(1-delta))))^(-1);
+k = h*((1/beta -(1-delta))/(theta*lambda))^(1/(theta-1));
+invest = delta*k;
+y = lambda*k^(theta)*h^(1-theta);
+c = y-delta*k;
+r =  1/beta - (1-delta);
+w = (1-theta)*(y/h);
+productivity = y/h;
+L=1-h;
+x=h/eta;
+
 end;
+
+steady;
 
 shocks;
-
-var e_z; stderr 0.01;
-var e_g; stderr 0.01;
+var eps_a; stderr sigma_eps;
 end;
- 
-resid;
-steady;
+
 check;
+steady;
+stoch_simul(order=1,irf=20,loglinear,hp_filter=1600) y c invest k h productivity w;
 
-stoch_simul(order=1, irf=20, loglinear, hp_filter=1600, simul_replic=100, periods=179) y c innv lab z w;
+stoch_simul(order=1,irf=20,loglinear,hp_filter=1600,simul_replic=10000,periods=200) y c invest h productivity w;
 
-% Read out simulations
-simulated_series_raw = get_simul_replications(M_, options_);
+%read out simulations
+simulated_series_raw=get_simul_replications(M_,options_);
 
-% Filter series
-simulated_series_filtered = NaN(size(simulated_series_raw));
-for ii = 1:options_.simul_replic
-    [trend, cycle] = sample_hp_filter(simulated_series_raw(:,:,ii)', 1600);
-    simulated_series_filtered(:,:,ii) = cycle';
+%filter series
+simulated_series_filtered=NaN(size(simulated_series_raw));
+for ii=1:options_.simul_replic
+    [trend, cycle]=sample_hp_filter(simulated_series_raw(:,:,ii)',1600);
+    simulated_series_filtered(:,:,ii)=cycle';
 end
 
-% Get variable positions
-y_pos = strmatch('y', M_.endo_names, 'exact');
-c_pos = strmatch('c', M_.endo_names, 'exact');
-i_pos = strmatch('innv', M_.endo_names, 'exact');
-h_pos = strmatch('lab', M_.endo_names, 'exact');
-productivity_pos = strmatch('z', M_.endo_names, 'exact');
-w_pos = strmatch('w', M_.endo_names, 'exact');
+%get variable positions
+y_pos=strmatch('y',M_.endo_names,'exact');
+c_pos=strmatch('c',M_.endo_names,'exact');
+i_pos=strmatch('invest',M_.endo_names,'exact');
+h_pos=strmatch('h',M_.endo_names,'exact');
+productivity_pos=strmatch('productivity',M_.endo_names,'exact');
+w_pos=strmatch('w',M_.endo_names,'exact');
 
-var_positions = [y_pos; c_pos; i_pos; h_pos; productivity_pos];
-var_names = M_.endo_names_long(var_positions,:);
+var_positions=[y_pos; c_pos; i_pos; h_pos; productivity_pos];
+var_names=M_.endo_names_long(var_positions,:);
 
-% Compute standard deviations
-std_mat = std(simulated_series_filtered(var_positions,:,:), 0, 2) * 100;
-std_h = std(simulated_series_filtered(h_pos,:,:), 0, 2) * 100;
-std_w = std(simulated_series_filtered(w_pos,:,:), 0, 2) * 100;
+%Compute standard deviations
+std_mat=std(simulated_series_filtered(var_positions,:,:),0,2)*100;
+std_h = std(simulated_series_filtered(h_pos,:,:),0,2)*100;
+std_w = std(simulated_series_filtered(w_pos,:,:),0,2)*100;
 
-% Compute relative standard deviations
+%Compute relative standard deviations
 rel_std_mat = std_mat ./ std_mat(1,:,:); % std(x) / std(y)
 rel_std_h_w = std_h ./ std_w; % std(h) / std(w)
 
-% Compute correlations
-corr_mat = NaN(5, options_.simul_replic);
-for ii = 1:options_.simul_replic
-    corr_mat(1,ii) = corr(simulated_series_filtered(y_pos,:,ii)', simulated_series_filtered(y_pos,:,ii)');
-    corr_mat(2,ii) = corr(simulated_series_filtered(y_pos,:,ii)', simulated_series_filtered(c_pos,:,ii)');
-    corr_mat(3,ii) = corr(simulated_series_filtered(y_pos,:,ii)', simulated_series_filtered(i_pos,:,ii)');
-    corr_mat(4,ii) = corr(simulated_series_filtered(y_pos,:,ii)', simulated_series_filtered(h_pos,:,ii)');
-    corr_mat(5,ii) = corr(simulated_series_filtered(y_pos,:,ii)', simulated_series_filtered(productivity_pos,:,ii)');
+%Compute correlations
+corr_mat = NaN(5, options_.simul_replic); % Adjust the size of corr_mat
+for ii=1:options_.simul_replic
+    corr_mat(1,ii)=corr(simulated_series_filtered(y_pos,:,ii)',simulated_series_filtered(y_pos,:,ii)');
+    corr_mat(2,ii)=corr(simulated_series_filtered(y_pos,:,ii)',simulated_series_filtered(c_pos,:,ii)');
+    corr_mat(3,ii)=corr(simulated_series_filtered(y_pos,:,ii)',simulated_series_filtered(i_pos,:,ii)');
+    corr_mat(4,ii)=corr(simulated_series_filtered(y_pos,:,ii)',simulated_series_filtered(h_pos,:,ii)');
+    corr_mat(5,ii)=corr(simulated_series_filtered(y_pos,:,ii)',simulated_series_filtered(productivity_pos,:,ii)');
 end
 
-% Compute correlation between h and w
+%Compute correlation between h and w
 corr_h_w = NaN(1, options_.simul_replic);
-for ii = 1:options_.simul_replic
+for ii=1:options_.simul_replic
     corr_h_w(1,ii) = corr(simulated_series_filtered(h_pos,:,ii)', simulated_series_filtered(w_pos,:,ii)');
 end
 
-% Print table with standard deviations and correlations
-fprintf('\n%-40s \n', 'Standard Deviations and Correlations')
-fprintf('%-20s \t %11s \t %11s \n', '', 'std(x)', 'corr(y,x)')
-for ii = 1:size(corr_mat,1)
-    fprintf('%-20s \t %3.2f (%3.2f) \t %3.2f (%3.2f) \n', var_names{ii,:}, mean(std_mat(ii,:,:), 3), std(std_mat(ii,:,:), 0, 3), mean(corr_mat(ii,:), 2), std(corr_mat(ii,:), 0, 2))
+%Print table with standard deviations and correlations
+fprintf('\n%-40s \n',title_string)
+fprintf('%-20s \t %11s \t %11s \n','','std(x)','corr(y,x)')
+for ii=1:size(corr_mat,1)
+    fprintf('%-20s \t %3.2f (%3.2f) \t %3.2f (%3.2f) \n', var_names{ii,:}, mean(std_mat(ii,:,:),3), std(std_mat(ii,:,:),0,3), mean(corr_mat(ii,:),2), std(corr_mat(ii,:),0,2))
 end
 
-% Print table with relative standard deviations
-fprintf('\n%-40s \n', 'Relative Standard Deviations')
-fprintf('%-20s \t %11s \n', '', 'std(x)/std(y)')
-for ii = 2:size(corr_mat,1)
-    fprintf('%-20s \t %3.2f (%3.2f) \n', var_names{ii,:}, mean(rel_std_mat(ii,:,:), 3), std(rel_std_mat(ii,:,:), 0, 3))
+%Print table with relative standard deviations
+fprintf('\n%-40s \n','Relative Standard Deviations')
+fprintf('%-20s \t %11s \n','','std(x)/std(y)')
+for ii=2:size(corr_mat,1) % Start from 2 to skip y itself
+    fprintf('%-20s \t %3.2f (%3.2f) \n', var_names{ii,:}, mean(rel_std_mat(ii,:,:),3), std(rel_std_mat(ii,:,:),0,3))
 end
 
-% Print table with correlation of h and w and relative std of h and w
-fprintf('\n%-40s \n', 'Correlation of h and w, Relative Std of h and w')
-fprintf('%-20s \t %11s \t %11s \n', 'Variable', 'corr(h,w)', 'std(h)/std(w)')
-fprintf('%-20s \t %3.2f (%3.2f) \t %3.2f (%3.2f) \n', 'h, w', mean(corr_h_w, 2), std(corr_h_w, 0, 2), mean(rel_std_h_w, 3), std(rel_std_h_w, 0, 3))
+%Print table with correlation of h and w and relative std of h and w
+fprintf('\n%-40s \n','Correlation of h and w, Relative Std of h and w')
+fprintf('%-20s \t %11s \t %11s \n','Variable','corr(h,w)','std(h)/std(w)')
+fprintf('%-20s \t %3.2f (%3.2f) \t %3.2f (%3.2f) \n', 'h, w', mean(corr_h_w,2), std(corr_h_w,0,2), mean(rel_std_h_w,3), std(rel_std_h_w,0,3))
+
+% Generate histograms with mean lines
+figure;
+
+% Relative Std of Consumption
+subplot(3,2,1);
+histogram(rel_std_mat(2,:,:));
+hold on;
+mean_rel_std_c = mean(rel_std_mat(2,:,:), 'all');
+xline(mean_rel_std_c, 'r', 'LineWidth', 2);
+title('Relative Std of Consumption');
+xlabel('std(c)/std(y)');
+ylabel('Frequency');
+hold off;
+
+% Relative Std of Investment
+subplot(3,2,2);
+histogram(rel_std_mat(3,:,:));
+hold on;
+mean_rel_std_i = mean(rel_std_mat(3,:,:), 'all');
+xline(mean_rel_std_i, 'r', 'LineWidth', 2);
+title('Relative Std of Investment');
+xlabel('std(i)/std(y)');
+ylabel('Frequency');
+hold off;
+
+% Relative Std of Hours
+subplot(3,2,3);
+histogram(rel_std_mat(4,:,:));
+hold on;
+mean_rel_std_h = mean(rel_std_mat(4,:,:), 'all');
+xline(mean_rel_std_h, 'r', 'LineWidth', 2);
+title('Relative Std of Hours');
+xlabel('std(h)/std(y)');
+ylabel('Frequency');
+hold off;
+
+% Relative Std of Productivity
+subplot(3,2,4);
+histogram(rel_std_mat(5,:,:));
+hold on;
+mean_rel_std_productivity = mean(rel_std_mat(5,:,:), 'all');
+xline(mean_rel_std_productivity, 'r', 'LineWidth', 2);
+title('Relative Std of Productivity');
+xlabel('std(productivity)/std(y)');
+ylabel('Frequency');
+hold off;
+
+% Relative Std of Hours and Wage
+subplot(3,2,5);
+histogram(rel_std_h_w);
+hold on;
+mean_rel_std_h_w = mean(rel_std_h_w, 'all');
+xline(mean_rel_std_h_w, 'r', 'LineWidth', 2);
+title('Relative Std of Hours and Wage');
+xlabel('std(h)/std(w)');
+ylabel('Frequency');
+hold off;
+
+% Correlation of Hours and Wage
+subplot(3,2,6);
+histogram(corr_h_w);
+hold on;
+mean_corr_h_w = mean(corr_h_w, 'all');
+xline(mean_corr_h_w, 'r', 'LineWidth', 2);
+title('Correlation of Hours and Wage');
+xlabel('corr(h,w)');
+ylabel('Frequency');
+hold off;
+
+% Standard Deviation of Consumption
+figure;
+histogram(std_mat(2,:,:));
+hold on;
+mean_std_c = mean(std_mat(2,:,:), 'all');
+xline(mean_std_c, 'r', 'LineWidth', 2);
+title('Standard Deviation of Consumption');
+xlabel('std(c)');
+ylabel('Frequency');
+hold off;
+
+
+
+
+
+

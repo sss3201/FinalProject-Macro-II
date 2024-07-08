@@ -6,7 +6,7 @@
  * 
  */
 
-title_string='Economy with divisible labor' 
+title_string='Economy with government spending'
 
 var c $c$ (long_name='consumption')
     w $w$ (long_name='real wage')
@@ -16,7 +16,8 @@ var c $c$ (long_name='consumption')
     k $k$ (long_name='capital stock')
     invest $i$ (long_name='investment')
     lambda $\lambda$ (long_name='TFP')
-    productivity ${\frac{y}{h}}$ (long_name='Productivity');
+    productivity ${\frac{y}{h}}$ (long_name='Productivity')
+    g $g$ (long_name='share spending');
     
 varexo eps_a;
 
@@ -25,9 +26,9 @@ parameters beta $\beta$ (long_name='discount factor')
     theta $\theta$ (long_name='capital share')
     gamma $\gamma$ (long_name='AR coefficient TFP')
     A $A$ (long_name='labor disutility parameter')
-    h_0 ${h_0}$ (long_name='full time workers in steady state')
+    h_0 ${a_0}$ (long_name='full time workers in steady state')
     sigma_eps $\sigma_e$ (long_name='TFP shock volatility')
-    B $B$ (long_name='composite labor disutility parameter')
+    B $\$ (long_name='composite labor disutility parameter')
     ;
 
 //Calibration, p. 319
@@ -36,17 +37,19 @@ delta = 0.025;
 theta = 0.36;
 gamma = 0.95;
 A = 2;
-sigma_eps=0.00712;
+sigma_eps=0.007;
+h_0=0.35;
+
 
 model;
 //1. Euler Equation
 1/c = beta*((1/c(+1))*(r(+1) +(1-delta)));
 //2. Labor FOC
-(1-theta)*(y/h) = A/(1-h)*c;
+(1-theta)*(y/h) = B*c;
 //3. Resource constraint
-k = y +(1-delta)*k(-1) - c;
-//4. Inversion
-invest=y-c;
+c = y +(1-delta)*k(-1) - k;
+//4. LOM capital
+k= (1-delta)*k(-1) + invest;
 //5. Production function
 y = lambda*k(-1)^(theta)*h^(1-theta);
 //6. Real wage
@@ -57,11 +60,14 @@ w = (1-theta)*(y/h);
 log(lambda)=gamma*log(lambda(-1))+eps_a;
 //9. Productivity
 productivity= y/h;
+invest=y-c-g;
 end;
 
 steady_state_model;
+B=-A*(log(1-h_0))/h_0; %called psi in footnote
+//Follows footnote 15
 lambda = 1;
-h = (1+(A/(1-theta))*(1 - (beta*delta*theta)/(1-beta*(1-delta))))^(-1);
+h = (1-theta)*(1/beta -(1-delta))/(B*(1/beta -(1-delta)-theta*delta));
 k = h*((1/beta -(1-delta))/(theta*lambda))^(1/(theta-1));
 invest = delta*k;
 y = lambda*k^(theta)*h^(1-theta);
@@ -81,7 +87,7 @@ check;
 steady;
 stoch_simul(order=1,irf=20,loglinear,hp_filter=1600) y c invest k h productivity w;
 
-stoch_simul(order=1,irf=20,loglinear,hp_filter=1600,simul_replic=10000,periods=179) y c invest h productivity w;
+stoch_simul(order=1,irf=20,loglinear,hp_filter=1600,simul_replic=10000,periods=200) y c invest h productivity w;
 
 %read out simulations
 simulated_series_raw=get_simul_replications(M_,options_);

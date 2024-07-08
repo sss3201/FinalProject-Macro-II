@@ -1,0 +1,67 @@
+Starting Dynare (version 6.0).
+Calling Dynare with arguments: none
+Starting preprocessing of the model file ... 
+WARNING: in the 'steady_state_model' block, variable 'g' is not assigned a value 
+Found 10 equation(s). 
+Evaluating expressions... 
+Computing static model derivatives (order 1). 
+Normalizing the static model... 
+Finding the optimal block decomposition of the static model... 
+5 block(s) found: 
+  4 recursive block(s) and 1 simultaneous block(s). 
+  the largest simultaneous block has 5 equation(s) 
+                                 and 5 feedback variable(s). 
+Computing dynamic model derivatives (order 1). 
+Normalizing the dynamic model... 
+Finding the optimal block decomposition of the dynamic model... 
+5 block(s) found: 
+  4 recursive block(s) and 1 simultaneous block(s). 
+  the largest simultaneous block has 5 equation(s) 
+                                 and 5 feedback variable(s). 
+Preprocessing completed. 
+Preprocessing time: 0h00m00s.
+
+title_string =
+
+    'Economy with government spending'
+
+[Warning: Some of the parameters have no value (B) when using steady. If these parameters are not initialized in a steadystate file or a
+steady_state_model-block, Dynare may not be able to solve the model. Note that simul, perfect_foresight_setup, and
+perfect_foresight_solver do not automatically call the steady state file.] 
+
+STEADY-STATE RESULTS:
+
+c            		 0.963025
+w            		 2.3706
+r            		 0.035101
+y            		 1.29509
+h            		 0.349641
+k            		 13.2826
+invest       		 0.332065
+lambda       		 1
+productivity 		 3.70406
+g            		 0
+
+EIGENVALUES:
+         Modulus             Real        Imaginary
+          0.9418           0.9418                0
+            0.95             0.95                0
+           1.073            1.073                0
+       1.167e+16       -1.167e+16                0
+
+There are 2 eigenvalue(s) larger than 1 in modulus for 2 forward-looking variable(s)
+The rank condition is verified.
+
+
+STEADY-STATE RESULTS:
+
+c            		 0.963025
+w            		 2.3706
+r            		 0.035101
+y            		 1.29509
+h            		 0.349641
+k            		 13.2826
+invest       		 0.332065
+lambda       		 1
+productivity 		 3.70406
+g            		 0
